@@ -1,0 +1,3749 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Teste Transmissão</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #0e1116;
+      --panel: #161b22;
+      --line: #2a3340;
+      --text: #e6edf3;
+      --muted: #8b9bb0;
+      --accent: #3dd68c;
+      --warn: #f0b429;
+      --bad: #f85149;
+      --input: #0d1117;
+      --font: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      --mono: "IBM Plex Mono", Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+
+      background:
+        radial-gradient(
+          1200px 600px at 10% -10%,
+          #1a2838 0%,
+          var(--bg) 55%
+        );
+
+      color: var(--text);
+      font-family: var(--font);
+    }
+
+    header {
+      padding: 1.25rem 1.5rem 0.5rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      margin: 0.35rem 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 1rem;
+      padding: 1rem 1.5rem 2rem;
+      max-width: 1400px;
+    }
+
+    @media (max-width: 960px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.7rem 0.85rem;
+      background: var(--input);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: var(--mono);
+    }
+
+    input[type="text"]:focus {
+      outline: 1px solid var(--accent);
+      border-color: var(--accent);
+    }
+
+    select {
+      padding: 0.55rem 0.75rem;
+      background: var(--input);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    select:focus {
+      outline: 1px solid var(--accent);
+      border-color: var(--accent);
+    }
+
+    .row {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-top: 0.85rem;
+      align-items: center;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 0.65rem 1.1rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .btn-go {
+      background: var(--accent);
+      color: #062016;
+    }
+
+    .btn-stop {
+      background: var(--bad);
+      color: #fff;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      user-select: none;
+    }
+
+    .toggle input {
+      width: 1.1rem;
+      height: 1.1rem;
+      accent-color: var(--accent);
+    }
+
+    video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      border-radius: 8px;
+      margin-top: 0.75rem;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    .stat {
+      background: var(--input);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.55rem 0.65rem;
+    }
+
+    .stat b {
+      display: block;
+      font-size: 1.05rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat span {
+      color: var(--muted);
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 650;
+      text-transform: uppercase;
+    }
+
+    .s-idle {
+      background: #30363d;
+      color: #c9d1d9;
+    }
+
+    .s-live {
+      background: #0d3b24;
+      color: var(--accent);
+    }
+
+    .s-error,
+    .s-dead {
+      background: #3d1214;
+      color: var(--bad);
+    }
+
+    .s-starting,
+    .s-reconnecting {
+      background: #3d2e0a;
+      color: var(--warn);
+    }
+
+    #log {
+      height: 320px;
+      overflow: auto;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      background: var(--input);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.65rem;
+      white-space: pre-wrap;
+      color: #9ecbff;
+      line-height: 1.45;
+    }
+
+    #grids {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fill, minmax(140px, 1fr));
+
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      max-height: 280px;
+      overflow: auto;
+    }
+
+    #grids img {
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #000;
+    }
+
+    .err {
+      color: var(--bad);
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      min-height: 1.2em;
+    }
+
+    #diskStatus {
+      grid-column: 1 / -1;
+      border-left: 5px solid var(--muted);
+    }
+
+    #diskStatus[data-level="ok"] {
+      border-left-color: var(--accent);
+    }
+
+    #diskStatus[data-level="warning"] {
+      border-left-color: var(--warn);
+      background: #3d2e0a;
+    }
+
+    #diskStatus[data-level="critical"] {
+      border-left-color: var(--bad);
+      background: #3d1214;
+    }
+
+    #diskStatus p {
+      margin: 0.4rem 0 0;
+    }
+
+    h2 {
+      margin: 0 0 0.6rem;
+      font-size: 0.95rem;
+      font-weight: 650;
+    }
+
+    #historyFormat {
+      min-width: 150px;
+    }
+
+    .history-format {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    #historyJobs article a {
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Teste Transmissão</h1>
+
+  <p>
+    Cola YouTube / M3U8 / Sports → HLS local
+    (DVR sem wipe de 6h) + grids opcionais.
+    Logs no terminal do <code>run.py</code>.
+  </p>
+</header>
+
+<main>
+
+  <section
+    class="panel"
+    id="diskStatus"
+    data-level="unknown"
+    role="status"
+    aria-live="polite"
+  >
+    <strong>Espaço no disco das gravações</strong>
+
+    <p id="diskSummary">
+      Consultando espaço disponível…
+    </p>
+
+    <p id="diskNotice"></p>
+  </section>
+
+
+  <section class="panel">
+
+    <label for="url">
+      Link da transmissão
+    </label>
+
+    <input
+      id="url"
+      type="text"
+      placeholder="https://www.youtube.com/watch?v=…  ou  https://….m3u8"
+      spellcheck="false"
+    />
+
+
+    <div class="row">
+
+      <label class="toggle">
+
+        <input
+          id="gridsOn"
+          type="checkbox"
+          checked
+        />
+
+        Gerar grids
+
+      </label>
+
+
+      <label>
+
+        Grid
+
+        <select
+          id="gridSize"
+          title="Tamanho do grid"
+        >
+          <option value="2">2×2</option>
+          <option value="3">3×3</option>
+          <option value="4">4×4</option>
+          <option value="5">5×5</option>
+        </select>
+
+      </label>
+
+
+      <label>
+
+        Processamento
+
+        <select
+          id="processBatch"
+          title="Segmentos processados por rodada"
+        >
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4" selected>4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+        </select>
+
+        <span class="muted">
+          segmentos por rodada
+        </span>
+
+      </label>
+
+
+      <button
+        class="btn-go"
+        id="btnStart"
+        type="button"
+      >
+        Iniciar
+      </button>
+
+
+      <button
+        class="btn-stop"
+        id="btnStop"
+        type="button"
+      >
+        Parar
+      </button>
+
+
+      <button
+        class="btn-ghost"
+        id="btnRefresh"
+        type="button"
+      >
+        Atualizar
+      </button>
+
+    </div>
+
+
+    <div
+      class="err"
+      id="err"
+    ></div>
+
+
+    <video
+      id="player"
+      controls
+      playsinline
+    ></video>
+
+
+    <div class="row">
+
+      <button
+        class="btn-go"
+        id="btnPlay"
+        type="button"
+      >
+        Reproduzir com som
+      </button>
+
+
+      <button
+        class="btn-ghost"
+        id="btnRetryPlayer"
+        type="button"
+      >
+        Reconectar player
+      </button>
+
+
+      <button
+        class="btn-ghost"
+        id="btnDvrStart"
+        type="button"
+      >
+        ⏮ Início da live
+      </button>
+
+
+      <button
+        class="btn-go"
+        id="btnGoLive"
+        type="button"
+      >
+        🔴 Ir ao vivo
+      </button>
+
+    </div>
+
+
+    <p
+      id="playerMessage"
+      role="status"
+      aria-live="polite"
+    >
+      Aguardando a transmissão.
+    </p>
+
+
+    <div class="stats">
+
+      <div class="stat">
+
+        <span>Status</span>
+
+        <b>
+          <span
+            class="status-pill s-idle"
+            id="st"
+          >
+            idle
+          </span>
+        </b>
+
+      </div>
+
+
+      <div class="stat">
+
+        <span>
+          Segmentos / ~duração
+        </span>
+
+        <b id="segs">
+          —
+        </b>
+
+      </div>
+
+
+      <div class="stat">
+
+        <span>
+          Frames / Grids
+        </span>
+
+        <b id="fg">
+          —
+        </b>
+
+      </div>
+
+    </div>
+
+
+    <h2 style="margin-top:1rem">
+      Gravações e MP4
+    </h2>
+
+
+    <label for="recording">
+      Gravação para exportar
+    </label>
+
+
+    <select
+      id="recording"
+      style="max-width:100%"
+    ></select>
+
+
+    <div class="row">
+
+      <button
+        class="btn-go"
+        id="btnExport"
+        type="button"
+        disabled
+      >
+        Exportar MP4
+      </button>
+
+    </div>
+
+
+    <p>
+      Durante a live, exporta o trecho já gravado.
+      Para incluir tudo, pare a captura antes de exportar.
+      O HLS original é preservado.
+    </p>
+
+
+    <p
+      id="exportMessage"
+      role="status"
+      aria-live="polite"
+    ></p>
+
+
+    <div id="exports"></div>
+
+
+    <h2 style="margin-top:1rem">
+      Últimos grids
+    </h2>
+
+
+    <div id="grids"></div>
+
+  </section>
+
+
+  <section class="panel">
+
+    <h2>
+      Log (espelho do terminal)
+    </h2>
+
+    <div id="log">
+      Aguardando…
+    </div>
+
+    <p
+      style="
+        color:var(--muted);
+        font-size:0.8rem;
+        margin:0.75rem 0 0
+      "
+    >
+      DVR: o <code>live.m3u8</code> local usa
+      <code>hls_list_size=0</code> (EVENT)
+      — guarda tudo desde o start.
+
+      YouTube no browser só mostra ~6h;
+      aqui o arquivo local pode ir além
+      (20h+ se a máquina aguentar disco).
+    </p>
+
+  </section>
+
+
+  <section
+    class="panel"
+    style="grid-column:1/-1"
+  >
+
+    <h2>
+      Baixar live completa — desde o início disponível
+    </h2>
+
+
+    <p>
+      Download independente do DVR, player e grids.
+      Recupera o histórico disponível no YouTube,
+      sem limite fixo de 6 horas,
+      e continua enquanto a live estiver acontecendo.
+    </p>
+
+
+    <label for="historyUrl">
+      URL da live para download histórico
+    </label>
+
+
+    <input
+      type="text"
+      id="historyUrl"
+      placeholder="https://www.youtube.com/watch?v=…"
+    />
+
+
+    <div class="row">
+
+      <label>
+
+        Formato do arquivo
+
+        <select
+          id="historyFormat"
+          title="Formato final do download"
+        >
+          <option
+            value="mkv"
+            selected
+          >
+            MKV
+          </option>
+
+          <option value="mp4">
+            MP4
+          </option>
+        </select>
+
+      </label>
+
+    </div>
+
+
+    <div
+      class="row"
+      style="margin-top:0.75rem"
+    >
+
+      <button
+        id="historyStart"
+        class="btn-go"
+        type="button"
+      >
+        Baixar desde o início
+      </button>
+
+
+      <button
+        id="historyUseUrl"
+        class="btn-ghost"
+        type="button"
+      >
+        Usar URL do DVR
+      </button>
+
+    </div>
+
+
+    <p
+      id="historyNotice"
+      role="status"
+      aria-live="polite"
+    ></p>
+
+
+    <p style="color:var(--muted)">
+
+      Parar e finalizar salva o trecho recuperado
+      até a parada.
+
+      Aguarde a finalização;
+      mantenha o computador ligado.
+
+      Arquivo final MKV ou MP4
+      com áudio e vídeo.
+
+      O total e o tempo restante
+      podem ser desconhecidos durante uma live.
+
+      Histórico removido pelo YouTube
+      não pode ser recuperado.
+
+    </p>
+
+
+    <div id="historyJobs"></div>
+
+  </section>
+
+</main>
+
+
+<script>
+
+const $ =
+  id =>
+    document.getElementById(id);
+
+
+let hls = null;
+
+let lastM3u8 = null;
+
+let sessionId = null;
+
+let liveM3u8 = null;
+
+let playerMode = "live";
+
+let dvrPollTimer = null;
+
+let dvrGridsActivated = false;
+
+let recordings = [];
+
+let lastRecovery = 0;
+
+
+let playerRetry = null;
+
+let playerRetries = 0;
+
+let mediaRecoveries = 0;
+
+
+let refreshRunning = false;
+
+let refreshAgain = false;
+
+
+let waitingSince = 0;
+
+let stallTimer = null;
+
+
+const video =
+  $("player");
+
+
+const playerMessage =
+  text => {
+
+    $("playerMessage").textContent =
+      text;
+
+  };
+
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+function setStatus(s) {
+
+  const el =
+    $("st");
+
+  el.textContent =
+    s || "idle";
+
+  el.className =
+    "status-pill s-" +
+    (s || "idle");
+
+}
+
+
+/* =========================================================
+   PLAYER
+========================================================= */
+
+async function requestPlayback() {
+
+  try {
+
+    await video.play();
+
+  }
+
+  catch (error) {
+
+    if (
+      error.name ===
+      "NotAllowedError"
+    ) {
+
+      playerMessage(
+        "Vídeo pronto. Clique em Reproduzir com som para iniciar."
+      );
+
+    }
+
+    else if (
+      error.name !==
+      "AbortError"
+    ) {
+
+      playerMessage(
+        "Não foi possível reproduzir: " +
+        error.message
+      );
+
+    }
+
+  }
+
+}
+
+
+function destroyPlayer() {
+
+  clearTimeout(
+    playerRetry
+  );
+
+  playerRetry =
+    null;
+
+
+  clearTimeout(
+    stallTimer
+  );
+
+  stallTimer =
+    null;
+
+
+  waitingSince =
+    0;
+
+
+  if (hls) {
+
+    try {
+
+      hls.destroy();
+
+    }
+
+    catch (_) {}
+
+
+    hls =
+      null;
+
+  }
+
+}
+
+
+function resetVideoElement() {
+
+  try {
+
+    video.pause();
+
+  }
+
+  catch (_) {}
+
+
+  video.removeAttribute(
+    "src"
+  );
+
+
+  try {
+
+    video.load();
+
+  }
+
+  catch (_) {}
+
+}
+
+
+function playM3u8(
+  url,
+  force = false,
+  startAtBeginning = false
+) {
+
+  if (!url)
+    return;
+
+
+  if (
+    !force &&
+    url === lastM3u8 &&
+    (
+      hls ||
+      video.currentSrc
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  const changed =
+    url !== lastM3u8;
+
+
+  lastM3u8 =
+    url;
+
+
+  clearTimeout(
+    playerRetry
+  );
+
+  playerRetry =
+    null;
+
+
+  if (changed) {
+
+    playerRetries =
+      0;
+
+    mediaRecoveries =
+      0;
+
+  }
+
+
+  destroyPlayer();
+
+  resetVideoElement();
+
+
+  playerMessage(
+    "Preparando a transmissão…"
+  );
+
+
+  if (
+    window.Hls &&
+    Hls.isSupported()
+  ) {
+
+    const instance =
+      new Hls({
+
+        liveDurationInfinity:
+          !startAtBeginning,
+
+        startPosition:
+          startAtBeginning
+            ? 0
+            : -1,
+
+        enableWorker:
+          true,
+
+        lowLatencyMode:
+          false,
+
+        maxBufferLength:
+          startAtBeginning
+            ? 90
+            : 30,
+
+        maxMaxBufferLength:
+          startAtBeginning
+            ? 180
+            : 60,
+
+        backBufferLength:
+          startAtBeginning
+            ? 180
+            : 60,
+
+        maxBufferHole:
+          startAtBeginning
+            ? 1.0
+            : 0.5,
+
+        nudgeOffset:
+          0.1,
+
+        nudgeMaxRetry:
+          8,
+
+        highBufferWatchdogPeriod:
+          1,
+
+        manifestLoadingMaxRetry:
+          6,
+
+        manifestLoadingRetryDelay:
+          1000,
+
+        levelLoadingMaxRetry:
+          6,
+
+        levelLoadingRetryDelay:
+          1000,
+
+        fragLoadingMaxRetry:
+          6,
+
+        fragLoadingRetryDelay:
+          1000
+
+      });
+
+
+    hls =
+      instance;
+
+
+    instance.on(
+
+      Hls.Events.MEDIA_ATTACHED,
+
+      () => {
+
+        if (
+          hls !== instance
+        )
+          return;
+
+
+        instance.loadSource(
+          url
+        );
+
+      }
+
+    );
+
+
+    instance.on(
+
+      Hls.Events.MANIFEST_PARSED,
+
+      () => {
+
+        if (
+          hls !== instance
+        )
+          return;
+
+
+        playerMessage(
+          "Transmissão pronta."
+        );
+
+
+        if (
+          startAtBeginning
+        ) {
+
+          try {
+
+            video.currentTime =
+              0;
+
+          }
+
+          catch (_) {}
+
+        }
+
+
+        requestPlayback();
+
+      }
+
+    );
+
+
+    instance.on(
+
+      Hls.Events.ERROR,
+
+      (_, data) => {
+
+        if (
+          hls !== instance ||
+          !data.fatal
+        ) {
+
+          return;
+
+        }
+
+
+        if (
+          data.type ===
+          Hls.ErrorTypes.NETWORK_ERROR
+        ) {
+
+          if (
+            playerRetries < 5
+          ) {
+
+            playerRetries +=
+              1;
+
+
+            playerMessage(
+              `Aguardando novos segmentos… tentativa ${playerRetries}/5`
+            );
+
+
+            clearTimeout(
+              playerRetry
+            );
+
+
+            playerRetry =
+              setTimeout(
+
+                () => {
+
+                  if (
+                    hls !== instance
+                  )
+                    return;
+
+
+                  try {
+
+                    instance.startLoad();
+
+                  }
+
+                  catch (_) {}
+
+                },
+
+                2500
+
+              );
+
+
+            return;
+
+          }
+
+
+          playerMessage(
+            "O player perdeu a conexão. Clique em Reconectar player."
+          );
+
+          return;
+
+        }
+
+
+        if (
+          data.type ===
+          Hls.ErrorTypes.MEDIA_ERROR
+        ) {
+
+          if (
+            mediaRecoveries < 3
+          ) {
+
+            mediaRecoveries +=
+              1;
+
+
+            playerMessage(
+              "Recuperando vídeo…"
+            );
+
+
+            try {
+
+              instance
+                .recoverMediaError();
+
+            }
+
+            catch (_) {}
+
+
+            return;
+
+          }
+
+        }
+
+
+        playerMessage(
+
+          "Falha no player (" +
+          data.details +
+          "). Clique em Reconectar player."
+
+        );
+
+      }
+
+    );
+
+
+    instance.attachMedia(
+      video
+    );
+
+  }
+
+  else if (
+
+    video.canPlayType(
+      "application/vnd.apple.mpegurl"
+    )
+
+  ) {
+
+    video.src =
+      url;
+
+
+    requestPlayback();
+
+  }
+
+  else {
+
+    playerMessage(
+
+      window.Hls
+
+        ? "Este navegador não suporta a reprodução HLS. Use Chrome ou Edge atualizado."
+
+        : "A biblioteca do player não carregou. Verifique a conexão e recarregue a página."
+
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   EVENTOS DO VÍDEO
+========================================================= */
+
+video.addEventListener(
+
+  "playing",
+
+  () => {
+
+    playerRetries =
+      0;
+
+    mediaRecoveries =
+      0;
+
+    waitingSince =
+      0;
+
+
+    clearTimeout(
+      stallTimer
+    );
+
+
+    stallTimer =
+      null;
+
+
+    playerMessage(
+
+      video.muted
+
+        ? "Reproduzindo sem som. Clique em Reproduzir com som."
+
+        : "Reproduzindo vídeo e áudio."
+
+    );
+
+
+    if (
+      playerMode === "dvr" &&
+      !dvrGridsActivated
+    ) {
+
+      dvrGridsActivated =
+        true;
+
+
+      api(
+
+        "/api/player-dvr/activate-grids",
+
+        {
+
+          method:
+            "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            "{}"
+
+        }
+
+      )
+
+      .catch(
+        error => {
+
+          dvrGridsActivated =
+            false;
+
+          console.warn(
+            "Falha ao ativar grids DVR:",
+            error
+          );
+
+        }
+      );
+
+    }
+
+  }
+
+);
+
+
+video.addEventListener(
+
+  "waiting",
+
+  () => {
+
+    if (
+      !waitingSince
+    ) {
+
+      waitingSince =
+        Date.now();
+
+    }
+
+
+    playerMessage(
+      "Aguardando buffer da transmissão…"
+    );
+
+
+    clearTimeout(
+      stallTimer
+    );
+
+
+    stallTimer =
+      setTimeout(
+
+        () => {
+
+          if (
+            video.paused ||
+            video.ended ||
+            !lastM3u8
+          ) {
+
+            return;
+
+          }
+
+
+          if (hls) {
+
+            playerMessage(
+
+              playerMode === "dvr"
+
+                ? "DVR preparando o próximo trecho…"
+
+                : "Transmissão demorou. Tentando recuperar…"
+
+            );
+
+
+            try {
+
+              hls.startLoad(
+
+                playerMode === "dvr"
+
+                  ? video.currentTime
+
+                  : -1
+
+              );
+
+            }
+
+            catch (_) {}
+
+          }
+
+        },
+
+        8000
+
+      );
+
+  }
+
+);
+
+
+video.addEventListener(
+
+  "canplay",
+
+  () => {
+
+    waitingSince =
+      0;
+
+
+    clearTimeout(
+      stallTimer
+    );
+
+
+    stallTimer =
+      null;
+
+  }
+
+);
+
+
+video.addEventListener(
+
+  "error",
+
+  () => {
+
+    if (
+      !hls &&
+      video.error
+    ) {
+
+      playerMessage(
+        "Falha de reprodução. Clique em Reconectar player."
+      );
+
+    }
+
+  }
+
+);
+
+
+/* =========================================================
+   BOTÕES DO PLAYER
+========================================================= */
+
+$("btnPlay").onclick =
+  () => {
+
+    video.muted =
+      false;
+
+
+    if (
+      video.volume === 0
+    ) {
+
+      video.volume =
+        1;
+
+    }
+
+
+    requestPlayback();
+
+  };
+
+
+$("btnRetryPlayer").onclick =
+  () => {
+
+    playerRetries =
+      0;
+
+    mediaRecoveries =
+      0;
+
+
+    if (
+      lastM3u8
+    ) {
+
+      playerMessage(
+        "Reconectando player…"
+      );
+
+
+      playM3u8(
+        lastM3u8,
+        true
+      );
+
+    }
+
+  };
+
+
+/* =========================================================
+   API
+========================================================= */
+
+async function api(
+  path,
+  opts
+) {
+
+  const r =
+    await fetch(
+      path,
+      opts
+    );
+
+
+  return r.json();
+
+}
+
+
+/* =========================================================
+   DISCO
+========================================================= */
+
+function showDisk(
+  disk
+) {
+
+  const level =
+    disk?.level ||
+    "unknown";
+
+
+  $("diskStatus")
+    .dataset
+    .level =
+      level;
+
+
+  if (
+    level === "unknown"
+  ) {
+
+    $("diskSummary").textContent =
+      "Espaço em disco indisponível.";
+
+
+    $("diskNotice").textContent =
+
+      disk?.error ||
+
+      "Reinicie o servidor atualizado e tente novamente.";
+
+
+    return;
+
+  }
+
+
+  const gb =
+    value =>
+
+      (
+        value /
+        1e9
+      )
+
+      .toLocaleString(
+
+        "pt-BR",
+
+        {
+          maximumFractionDigits:
+            1
+        }
+
+      );
+
+
+  $("diskSummary").textContent =
+
+    `${gb(disk.free_bytes)} GB livres de ${gb(disk.total_bytes)} GB (${disk.free_percent}% livre).`;
+
+
+  $("diskStatus").title =
+    disk.path;
+
+
+  $("diskNotice").textContent =
+
+    level === "critical"
+
+      ? "Espaço crítico: menos de 2 GB livres. Libere espaço; a gravação e a exportação podem falhar se o disco encher."
+
+      : level === "warning"
+
+      ? "Pouco espaço: menos de 10 GB livres. Libere espaço antes de uma gravação longa ou exportação MP4."
+
+      : "Espaço disponível. Aviso abaixo de 10 GB; crítico abaixo de 2 GB. A exportação MP4 usa espaço adicional.";
+
+}
+
+
+/* =========================================================
+   REFRESH
+========================================================= */
+
+async function refresh() {
+
+  if (
+    refreshRunning
+  ) {
+
+    refreshAgain =
+      true;
+
+    return;
+
+  }
+
+
+  refreshRunning =
+    true;
+
+
+  try {
+
+    await refreshRecordings();
+
+
+    try {
+
+      const st =
+        await api(
+          "/api/status"
+        );
+
+
+      showDisk(
+        st.disk
+      );
+
+
+      const s =
+        st.session;
+
+
+      if (!s) {
+
+        setStatus(
+          "idle"
+        );
+
+
+        $("segs").textContent =
+          "—";
+
+
+        $("fg").textContent =
+          "—";
+
+      }
+
+      else {
+
+        if (
+          sessionId !== s.id
+        ) {
+
+          lastRecovery =
+            0;
+
+        }
+
+
+        sessionId =
+          s.id;
+
+
+        if (
+          (s.recovery_attempts || 0) >
+          lastRecovery
+        ) {
+
+          lastRecovery =
+            s.recovery_attempts ||
+            0;
+
+
+          playerRetries =
+            0;
+
+
+          mediaRecoveries =
+            0;
+
+        }
+
+
+        setStatus(
+          s.status
+        );
+
+
+        $("segs").textContent =
+
+          `${s.segments} / ~${Math.round(s.duration_approx_sec)}s`;
+
+
+        $("fg").textContent =
+
+          `${s.frames_done} / ${s.grids_done}`;
+
+
+        $("gridsOn").checked =
+          !!s.generate_grids;
+
+
+        if (
+          s.grid_size
+        ) {
+
+          $("gridSize").value =
+            String(
+              s.grid_size
+            );
+
+        }
+
+
+        if (
+          s.process_batch
+        ) {
+
+          $("processBatch").value =
+            String(
+              s.process_batch
+            );
+
+        }
+
+
+        $("err").textContent =
+          s.error ||
+          "";
+
+
+        liveM3u8 =
+          s.m3u8 ||
+          liveM3u8;
+
+
+        if (
+
+          playerMode === "live" &&
+
+          s.segments >= 6 &&
+
+          s.m3u8 &&
+
+          [
+            "live",
+            "reconnecting",
+            "ended",
+            "stopped",
+            "dead"
+          ]
+
+          .includes(
+            s.status
+          )
+
+        ) {
+
+          playM3u8(
+            s.m3u8
+          );
+
+        }
+
+        else if (
+
+          s.status === "live" &&
+
+          s.segments > 0 &&
+
+          s.segments < 6 &&
+
+          !lastM3u8
+
+        ) {
+
+          playerMessage(
+
+            `Criando buffer inicial… ${s.segments}/3 segmentos`
+
+          );
+
+        }
+
+
+        const box =
+          $("grids");
+
+
+        if (
+          s.grids_done > 0
+        ) {
+
+          const start =
+            Math.max(
+              1,
+              s.grids_done - 11
+            );
+
+
+          let html =
+            "";
+
+
+          for (
+
+            let i =
+              s.grids_done;
+
+            i >= start;
+
+            i--
+
+          ) {
+
+            const n =
+              String(i)
+                .padStart(
+                  5,
+                  "0"
+                );
+
+
+            const size =
+              String(
+                s.grid_size ||
+                2
+              );
+
+
+            html +=
+
+              `<img src="/media/${s.id}/grids/grid_${n}_${size}x${size}.jpg?t=${Date.now()}" alt="grid ${i}" loading="lazy" />`;
+
+          }
+
+
+          box.innerHTML =
+            html;
+
+        }
+
+      }
+
+    }
+
+    catch (e) {
+
+      showDisk({
+
+        level:
+          "unknown",
+
+        error:
+          "Não foi possível atualizar o espaço em disco. Verifique o servidor."
+
+      });
+
+
+      $("err").textContent =
+        String(e);
+
+    }
+
+
+    try {
+
+      const lg =
+        await api(
+          "/api/logs"
+        );
+
+
+      $("log").textContent =
+
+        (
+          lg.lines ||
+          []
+        )
+
+        .join("\n")
+
+        ||
+
+        "(sem linhas ainda)";
+
+
+      $("log").scrollTop =
+        $("log").scrollHeight;
+
+    }
+
+    catch (_) {}
+
+  }
+
+  finally {
+
+    refreshRunning =
+      false;
+
+
+    if (
+      refreshAgain
+    ) {
+
+      refreshAgain =
+        false;
+
+
+      setTimeout(
+        refresh,
+        100
+      );
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   EXPORTAÇÕES
+========================================================= */
+
+function showExports() {
+
+  const row =
+    recordings.find(
+
+      r =>
+        r.id ===
+        $("recording").value
+
+    );
+
+
+  const job =
+    row?.export ||
+    {};
+
+
+  $("btnExport").disabled =
+
+    !row ||
+
+    job.status ===
+    "running";
+
+
+  $("exportMessage").textContent =
+
+    job.status === "running"
+
+      ? "Gerando MP4 em segundo plano…"
+
+      : job.status === "error"
+
+      ? job.error
+
+      : job.status === "ready"
+
+      ? "MP4 pronto para baixar."
+
+      : "";
+
+
+  const box =
+    $("exports");
+
+
+  box.replaceChildren();
+
+
+  for (
+
+    const file of
+      row?.files ||
+      []
+
+  ) {
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+
+    link.href =
+
+      `/download/${encodeURIComponent(row.id)}/${encodeURIComponent(file)}`;
+
+
+    link.textContent =
+      "Baixar " +
+      file;
+
+
+    link.download =
+      file;
+
+
+    link.style.color =
+      "var(--accent)";
+
+
+    const line =
+      document.createElement(
+        "p"
+      );
+
+
+    line.append(
+      link
+    );
+
+
+    box.append(
+      line
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   GRAVAÇÕES
+========================================================= */
+
+async function refreshRecordings() {
+
+  try {
+
+    const result =
+      await api(
+        "/api/recordings"
+      );
+
+
+    if (
+      !result.ok
+    ) {
+
+      throw new Error(
+
+        result.error ||
+
+        "Não foi possível listar gravações"
+
+      );
+
+    }
+
+
+    recordings =
+      result.recordings;
+
+
+    const select =
+      $("recording");
+
+
+    const previous =
+      select.value;
+
+
+    select.replaceChildren();
+
+
+    for (
+      const row of recordings
+    ) {
+
+      select.add(
+
+        new Option(
+          row.id,
+          row.id
+        )
+
+      );
+
+    }
+
+
+    if (
+
+      recordings.some(
+
+        r =>
+          r.id === previous
+
+      )
+
+    ) {
+
+      select.value =
+        previous;
+
+    }
+
+    else if (
+
+      recordings.some(
+
+        r =>
+          r.id === sessionId
+
+      )
+
+    ) {
+
+      select.value =
+        sessionId;
+
+    }
+
+
+    showExports();
+
+  }
+
+  catch (error) {
+
+    $("exportMessage").textContent =
+
+      "Não foi possível consultar as exportações: " +
+
+      error.message;
+
+  }
+
+}
+
+
+$("recording").onchange =
+  showExports;
+
+
+/* =========================================================
+   EXPORTAR MP4
+========================================================= */
+
+$("btnExport").onclick =
+async () => {
+
+  $("btnExport").disabled =
+    true;
+
+
+  try {
+
+    const result =
+      await api(
+
+        "/api/export",
+
+        {
+
+          method:
+            "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              session_id:
+                $("recording").value
+
+            })
+
+        }
+
+      );
+
+
+    if (
+      !result.ok
+    ) {
+
+      throw new Error(
+        result.error
+      );
+
+    }
+
+
+    await refreshRecordings();
+
+  }
+
+  catch (error) {
+
+    $("exportMessage").textContent =
+      error.message;
+
+
+    $("btnExport").disabled =
+      false;
+
+  }
+
+};
+
+
+/* =========================================================
+   CONTROLES DOS GRIDS
+========================================================= */
+
+$("gridSize").onchange =
+async () => {
+
+  try {
+
+    const value =
+      Number(
+        $("gridSize").value
+      );
+
+
+    const result =
+      await api(
+
+        "/api/grid-size",
+
+        {
+
+          method:
+            "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              grid_size:
+                value
+            })
+
+        }
+
+      );
+
+
+    if (
+      !result.ok
+    ) {
+
+      throw new Error(
+
+        result.error ||
+
+        "não foi possível alterar o grid"
+
+      );
+
+    }
+
+
+    $("err").textContent =
+      "";
+
+  }
+
+  catch (error) {
+
+    if (
+
+      String(
+        error.message
+      )
+
+      .toLowerCase()
+
+      .includes(
+        "nenhuma sessão"
+      )
+
+    ) {
+
+      return;
+
+    }
+
+
+    $("err").textContent =
+
+      "Grid: " +
+
+      error.message;
+
+  }
+
+};
+
+
+$("processBatch").onchange =
+async () => {
+
+  try {
+
+    const value =
+      Number(
+        $("processBatch").value
+      );
+
+
+    const result =
+      await api(
+
+        "/api/process-batch",
+
+        {
+
+          method:
+            "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              process_batch:
+                value
+
+            })
+
+        }
+
+      );
+
+
+    if (
+      !result.ok
+    ) {
+
+      throw new Error(
+
+        result.error ||
+
+        "não foi possível alterar o processamento"
+
+      );
+
+    }
+
+
+    $("err").textContent =
+      "";
+
+  }
+
+  catch (error) {
+
+    if (
+
+      String(
+        error.message
+      )
+
+      .toLowerCase()
+
+      .includes(
+        "nenhuma sessão"
+      )
+
+    ) {
+
+      return;
+
+    }
+
+
+    $("err").textContent =
+
+      "Processamento: " +
+
+      error.message;
+
+  }
+
+};
+
+
+/* =========================================================
+   DVR DO PLAYER
+========================================================= */
+
+function stopDvrPolling() {
+
+  if (
+    dvrPollTimer
+  ) {
+
+    clearTimeout(
+      dvrPollTimer
+    );
+
+
+    dvrPollTimer =
+      null;
+
+  }
+
+}
+
+
+async function waitForDvr() {
+
+  stopDvrPolling();
+
+
+  try {
+
+    const result =
+      await api(
+        "/api/player-dvr/status"
+      );
+
+
+    const dvr =
+      result.dvr ||
+      {};
+
+
+    if (
+      dvr.error
+    ) {
+
+      playerMessage(
+        "DVR do YouTube: " +
+        dvr.error
+      );
+
+
+      $("btnDvrStart").disabled =
+        false;
+
+
+      return;
+
+    }
+
+
+    if (
+      dvr.ready &&
+      dvr.playlist
+    ) {
+
+      playerMode =
+        "dvr";
+
+
+      dvrGridsActivated =
+        false;
+
+
+      playerMessage(
+
+        `Abrindo início disponível da live… ${Math.round(dvr.seconds_ready || 0)}s preparados.`
+
+      );
+
+
+      playM3u8(
+        dvr.playlist,
+        true,
+        true
+      );
+
+
+      $("btnDvrStart").disabled =
+        false;
+
+
+      return;
+
+    }
+
+
+    if (
+      dvr.running
+    ) {
+
+      playerMessage(
+        "Buscando o início disponível no DVR do YouTube…"
+      );
+
+
+      dvrPollTimer =
+        setTimeout(
+          waitForDvr,
+          1200
+        );
+
+
+      return;
+
+    }
+
+
+    $("btnDvrStart").disabled =
+      false;
+
+
+    playerMessage(
+      "O DVR não ficou disponível para esta live."
+    );
+
+  }
+
+  catch (error) {
+
+    $("btnDvrStart").disabled =
+      false;
+
+
+    playerMessage(
+
+      "Falha ao consultar DVR: " +
+
+      error.message
+
+    );
+
+  }
+
+}
+
+
+$("btnDvrStart").onclick =
+async () => {
+
+  if (
+    !sessionId
+  ) {
+
+    playerMessage(
+      "Inicie uma transmissão primeiro."
+    );
+
+    return;
+
+  }
+
+
+  $("btnDvrStart").disabled =
+    true;
+
+
+  playerMessage(
+    "Preparando o início da live…"
+  );
+
+
+  try {
+
+    const result =
+      await api(
+
+        "/api/player-dvr/start",
+
+        {
+
+          method:
+            "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            "{}"
+
+        }
+
+      );
+
+
+    if (
+      !result.ok
+    ) {
+
+      throw new Error(
+
+        result.error ||
+
+        "não foi possível iniciar o DVR"
+
+      );
+
+    }
+
+
+    await waitForDvr();
+
+  }
+
+  catch (error) {
+
+    $("btnDvrStart").disabled =
+      false;
+
+
+    playerMessage(
+
+      "DVR: " +
+
+      error.message
+
+    );
+
+  }
+
+};
+
+
+$("btnGoLive").onclick =
+async () => {
+
+  stopDvrPolling();
+
+
+  playerMode =
+    "live";
+
+
+  dvrGridsActivated =
+    false;
+
+
+  try {
+
+    await api(
+
+      "/api/player-dvr/stop",
+
+      {
+
+        method:
+          "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          "{}"
+
+      }
+
+    );
+
+  }
+
+  catch (_) {}
+
+
+  if (
+    !liveM3u8
+  ) {
+
+    playerMessage(
+      "A transmissão ao vivo ainda não está pronta."
+    );
+
+    return;
+
+  }
+
+
+  playerMessage(
+    "Voltando para o ao vivo…"
+  );
+
+
+  playM3u8(
+    liveM3u8,
+    true,
+    false
+  );
+
+};
+
+
+/* =========================================================
+   INICIAR
+========================================================= */
+
+$("btnStart").onclick =
+async () => {
+
+  $("err").textContent =
+    "";
+
+
+  const url =
+    $("url")
+      .value
+      .trim();
+
+
+  if (!url) {
+
+    $("err").textContent =
+      "Cola um link.";
+
+
+    return;
+
+  }
+
+
+  destroyPlayer();
+
+  resetVideoElement();
+
+
+  lastM3u8 =
+    null;
+
+  liveM3u8 =
+    null;
+
+  playerMode =
+    "live";
+
+  sessionId =
+    null;
+
+  lastRecovery =
+    0;
+
+  playerRetries =
+    0;
+
+  mediaRecoveries =
+    0;
+
+
+  playerMessage(
+    "Iniciando transmissão…"
+  );
+
+
+  setStatus(
+    "starting"
+  );
+
+
+  const res =
+    await api(
+
+      "/api/start",
+
+      {
+
+        method:
+          "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify({
+
+            url,
+
+            name:
+              "teste",
+
+            generate_grids:
+              $("gridsOn").checked,
+
+            grid_size:
+              Number(
+                $("gridSize").value
+              ),
+
+            process_batch:
+              Number(
+                $("processBatch").value
+              )
+
+          })
+
+      }
+
+    );
+
+
+  if (
+    !res.ok
+  ) {
+
+    $("err").textContent =
+
+      res.error ||
+
+      "falhou";
+
+  }
+
+
+  await refresh();
+
+
+  if (
+    res.ok &&
+    res.session
+  ) {
+
+    $("recording").value =
+      res.session.id;
+
+
+    showExports();
+
+  }
+
+};
+
+
+/* =========================================================
+   PARAR
+========================================================= */
+
+$("btnStop").onclick =
+async () => {
+
+  await api(
+
+    "/api/stop",
+
+    {
+
+      method:
+        "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json"
+      },
+
+      body:
+        "{}"
+
+    }
+
+  );
+
+
+  await refresh();
+
+};
+
+
+/* =========================================================
+   GRIDS
+========================================================= */
+
+$("gridsOn").onchange =
+async () => {
+
+  await api(
+
+    "/api/grids",
+
+    {
+
+      method:
+        "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json"
+      },
+
+      body:
+        JSON.stringify({
+
+          generate_grids:
+            $("gridsOn").checked
+
+        })
+
+    }
+
+  );
+
+};
+
+
+/* =========================================================
+   ATUALIZAR
+========================================================= */
+
+$("btnRefresh").onclick =
+async () => {
+
+  const btn =
+    $("btnRefresh");
+
+
+  btn.disabled =
+    true;
+
+
+  const oldText =
+    btn.textContent;
+
+
+  btn.textContent =
+    "Atualizando…";
+
+
+  await refresh();
+
+
+  setTimeout(
+
+    () => {
+
+      btn.disabled =
+        false;
+
+
+      btn.textContent =
+        oldText;
+
+    },
+
+    250
+
+  );
+
+};
+
+
+/* =========================================================
+   ATUALIZAÇÃO AUTOMÁTICA
+========================================================= */
+
+setInterval(
+  refresh,
+  3000
+);
+
+
+refresh();
+
+
+/* =========================================================
+   DOWNLOAD HISTÓRICO
+========================================================= */
+
+(() => {
+
+  let polling =
+    false;
+
+
+  let submitting =
+    false;
+
+
+  const active =
+    new Set([
+      "starting",
+      "downloading",
+      "stopping",
+      "finalizing"
+    ]);
+
+
+  const labels = {
+
+    starting:
+      "Preparando",
+
+    downloading:
+      "Baixando histórico / acompanhando live",
+
+    stopping:
+      "Parando — aguardando fragments",
+
+    finalizing:
+      "Unindo e verificando áudio/vídeo",
+
+    completed:
+      "Concluído",
+
+    stopped:
+      "Parado",
+
+    error:
+      "Erro",
+
+    interrupted:
+      "Interrompido"
+
+  };
+
+
+  const sizes =
+    n =>
+
+      (
+        Number(
+          n ||
+          0
+        )
+        /
+        1024
+        /
+        1024
+      )
+
+      .toFixed(
+        1
+      )
+
+      +
+      " MB";
+
+
+  async function request(
+    path,
+    body
+  ) {
+
+    const response =
+      await fetch(
+
+        path,
+
+        {
+
+          method:
+            "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(
+              body
+            )
+
+        }
+
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok ||
+      !data.ok
+    ) {
+
+      throw new Error(
+
+        data.error ||
+
+        "Falha na solicitação"
+
+      );
+
+    }
+
+
+    return data;
+
+  }
+
+
+  async function poll() {
+
+    if (
+      polling
+    )
+      return;
+
+
+    polling =
+      true;
+
+
+    try {
+
+      const response =
+        await fetch(
+          "/api/history/status"
+        );
+
+
+      if (
+        !response.ok
+      ) {
+
+        throw new Error(
+          "Não foi possível consultar os downloads"
+        );
+
+      }
+
+
+      const data =
+        await response.json();
+
+
+      $("historyStart").disabled =
+
+        submitting ||
+
+        data.jobs.some(
+
+          job =>
+            active.has(
+              job.status
+            )
+
+        );
+
+
+      $("historyFormat").disabled =
+
+        submitting ||
+
+        data.jobs.some(
+
+          job =>
+            active.has(
+              job.status
+            )
+
+        );
+
+
+      const container =
+        $("historyJobs");
+
+
+      const expanded =
+        new Set(
+
+          [
+            ...container
+              .querySelectorAll(
+                "details[open]"
+              )
+          ]
+
+          .map(
+            el =>
+              el.dataset.id
+          )
+
+        );
+
+
+      container
+        .replaceChildren();
+
+
+      for (
+        const job of data.jobs
+      ) {
+
+        const row =
+          document.createElement(
+            "article"
+          );
+
+
+        row.style.cssText =
+          "border-top:1px solid var(--line);padding:1rem 0;overflow-wrap:anywhere";
+
+
+        const heading =
+          document.createElement(
+            "strong"
+          );
+
+
+        const format =
+          String(
+            job.format ||
+            (
+              job.file
+                ? job.file.split(".").pop()
+                : "mkv"
+            )
+          )
+          .toUpperCase();
+
+
+        heading.textContent =
+
+          `${labels[job.status] || job.status} • ${format} • ${sizes(job.bytes_on_disk)} em disco`;
+
+
+        row.append(
+          heading
+        );
+
+
+        const url =
+          document.createElement(
+            "p"
+          );
+
+
+        url.textContent =
+          job.url;
+
+
+        row.append(
+          url
+        );
+
+
+        for (
+
+          const [
+            id,
+            track
+          ]
+
+          of
+
+          Object.entries(
+            job.tracks ||
+            {}
+          )
+
+        ) {
+
+          const progress =
+            document.createElement(
+              "p"
+            );
+
+
+          progress.textContent =
+
+            `Faixa ${id}: ${sizes(track.downloaded_bytes)} • fragmento ${track.fragment_index ?? "—"} / ${track.fragment_count ?? "desconhecido"} • ${track.status === "finished" ? "faixa encerrada" : track.speed ? sizes(track.speed) + "/s" : "aguardando"} • ${track.protocol || ""}${track.from_start ? " • FROM_START=True" : ""}`;
+
+
+          row.append(
+            progress
+          );
+
+        }
+
+
+        if (
+          job.duration
+        ) {
+
+          const duration =
+            document.createElement(
+              "p"
+            );
+
+
+          duration.textContent =
+
+            `Duração do arquivo: ${Math.floor(job.duration / 3600)}h ${Math.floor(job.duration % 3600 / 60)}min ${Math.floor(job.duration % 60)}s${job.partial ? " (trecho recuperado até a parada)" : ""}`;
+
+
+          row.append(
+            duration
+          );
+
+        }
+
+
+        if (
+          job.error
+        ) {
+
+          const error =
+            document.createElement(
+              "p"
+            );
+
+
+          error.textContent =
+            job.error;
+
+
+          error.style.color =
+            "var(--bad)";
+
+
+          row.append(
+            error
+          );
+
+        }
+
+
+        if (
+          active.has(
+            job.status
+          )
+        ) {
+
+          const stop =
+            document.createElement(
+              "button"
+            );
+
+
+          stop.textContent =
+            "Parar e finalizar este download";
+
+
+          stop.disabled =
+            [
+              "stopping",
+              "finalizing"
+            ]
+
+            .includes(
+              job.status
+            );
+
+
+          stop.onclick =
+          async () => {
+
+            stop.disabled =
+              true;
+
+
+            try {
+
+              await request(
+
+                "/api/history/stop",
+
+                {
+                  id:
+                    job.id
+                }
+
+              );
+
+
+              $("historyNotice").textContent =
+
+                "Parada solicitada. Aguarde a finalização.";
+
+            }
+
+            catch (error) {
+
+              $("historyNotice").textContent =
+                error.message;
+
+            }
+
+
+            await poll();
+
+          };
+
+
+          row.append(
+            stop
+          );
+
+        }
+
+
+        if (
+
+          job.file &&
+
+          [
+            "completed",
+            "stopped"
+          ]
+
+          .includes(
+            job.status
+          )
+
+        ) {
+
+          const link =
+            document.createElement(
+              "a"
+            );
+
+
+          link.href =
+
+            "/history-download/" +
+
+            encodeURIComponent(
+              job.id
+            );
+
+
+          const extension =
+            String(
+              job.file
+            )
+
+            .split(".")
+            .pop()
+            .toUpperCase();
+
+
+          link.textContent =
+
+            "Baixar arquivo " +
+
+            extension;
+
+
+          link.style.color =
+            "var(--accent)";
+
+
+          link.download =
+            job.file;
+
+
+          row.append(
+            link
+          );
+
+        }
+
+
+        const details =
+          document.createElement(
+            "details"
+          );
+
+
+        details.dataset.id =
+          job.id;
+
+
+        details.open =
+          expanded.has(
+            job.id
+          );
+
+
+        const summary =
+          document.createElement(
+            "summary"
+          );
+
+
+        summary.textContent =
+          "Logs deste download";
+
+
+        const log =
+          document.createElement(
+            "pre"
+          );
+
+
+        log.style.cssText =
+          "max-height:280px;overflow:auto;white-space:pre-wrap";
+
+
+        log.textContent =
+
+          (
+            job.logs ||
+            []
+          )
+
+          .join("\n");
+
+
+        details.append(
+          summary,
+          log
+        );
+
+
+        row.append(
+          details
+        );
+
+
+        container.append(
+          row
+        );
+
+      }
+
+    }
+
+    catch (error) {
+
+      $("historyNotice").textContent =
+        error.message;
+
+    }
+
+    finally {
+
+      polling =
+        false;
+
+    }
+
+  }
+
+
+  $("historyUseUrl").onclick =
+    () => {
+
+      $("historyUrl").value =
+        $("url").value;
+
+    };
+
+
+  $("historyStart").onclick =
+  async () => {
+
+    submitting =
+      true;
+
+
+    $("historyStart").disabled =
+      true;
+
+
+    $("historyFormat").disabled =
+      true;
+
+
+    try {
+
+      const url =
+        $("historyUrl")
+          .value
+          .trim();
+
+
+      if (!url) {
+
+        throw new Error(
+          "Cole a URL da live."
+        );
+
+      }
+
+
+      const format =
+        $("historyFormat").value;
+
+
+      await request(
+
+        "/api/history/start",
+
+        {
+
+          url:
+            url,
+
+          format:
+            format
+
+        }
+
+      );
+
+
+      $("historyNotice").textContent =
+
+        `Download iniciado em ${format.toUpperCase()}. Acompanhe as faixas e os logs abaixo.`;
+
+    }
+
+    catch (error) {
+
+      $("historyNotice").textContent =
+        error.message;
+
+    }
+
+    finally {
+
+      submitting =
+        false;
+
+
+      await poll();
+
+    }
+
+  };
+
+
+  setInterval(
+    poll,
+    3000
+  );
+
+
+  poll();
+
+})();
+
+</script>
+
+</body>
+</html>
